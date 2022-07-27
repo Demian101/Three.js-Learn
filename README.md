@@ -521,3 +521,90 @@ scene.add(mesh);
 
 - `'position'` 和某种 shader 着色器有关, 目前我们先这么用 ; 
 
+
+
+
+
+# Debug UI
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-27-092455.png" style="zoom:50%;" />
+
+> 右侧的控制栏就是 Debug UI , 可以用来方便的控制 Renderer 的状态 ; 
+
+
+
+```js
+import * as dat from 'dat.gui'
+import gsap from 'gsap'
+
+// Debug
+const gui = new dat.GUI({ closed: true })
+// Debug object
+const parameters = {
+  color: 0x321dd4,
+  spin() {
+    gsap.to(cube.rotation, { y: cube.rotation.y + 4, duration: 2 })
+  }
+}
+
+gui   // 如果面板上的 color 被人改变， 那么 onChange 触发修改 material 的颜色
+  .addColor(parameters, 'color')
+  .onChange(() => material.color.set(parameters.color))
+
+gui.add(parameters, 'spin')   // 添加 spin(旋转) 方法，点击触发 gsap 的转一转
+
+
+
+/* 
+ * cube 定义区域
+ * scene.add(cube)
+ * ...
+*/
+
+// Debug
+// gui.add(cube.position, 'y', -3, 3, 0.01)
+// 链式调用：最小-3，最大 3，精度为 0.01 , 命名为 Elevation
+// 自动判断 cube.visible ,发现是 Boolean 类型，应用 Checkbox 单选框
+//    判断 material.wireframe , 发现是 Boolean 类型，应用 Checkbox 单选框
+gui.add(cube.position, 'y').min(-3).max(3).step(0.01).name('Elevation')
+gui.add(cube, 'visible')
+gui.add(material, 'wireframe')
+```
+
+Tips : 
+
+- 颜色需要  `gui.addColor`  , 而后跟一个 `onChange` 方法 ; 
+- 链式调用
+
+
+
+
+
+除了 dat.GUI , There are several tools we can use to debug Three.js applications:
+
+- dat.GUI
+- control.panel
+- ControlKit
+- Guify
+- Oui
+
+We'll be using `dat.GUi`:
+
+```bash
+npm i --save-dev dat.gui
+```
+
+
+
+我们可以将各种类型的元素添加到面板中 ( add to the panel) :
+
+- **Range**  数据范围— for values with min/max
+- **Color**  
+- **Text**
+- **Checkbox** 单选框 — for booleans
+- **Select** 多选 — to select from a list of values
+- **Button** — to trigger functions
+- **Folder** — for organizing panels containing many elements ( 组织包含许多元素的面板, 没懂)
+
+
+
