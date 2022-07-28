@@ -610,7 +610,51 @@ npm i --save-dev dat.gui
 
 
 
-# Texture 质地
+# Texture 质地/纹理
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-023105.png" style="zoom:30%;" />
+
+
+
+纹理对象 `Texture` 就是包含一张图片的对象
+
+```js
+// loading 管理器
+const loadingManager = new THREE.LoadingManager();
+
+// 从 loading 管理器 中加载 textureLoader
+const textureLoader = new THREE.TextureLoader(loadingManager);
+
+// 使用 textureLoader 加载 png, 命名为 colorTexture
+const colorTexture = textureLoader.load("/textures/minecraft.png");
+
+const geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+
+// // array: Float32Array(48) [0, 1, 1, 1, 0, 0, 1, 0, 0 ......
+console.log(geometry.attributes.uv);  
+
+// magFilter : 当纹素覆盖超过一个像素时，如何对纹理进行采样。
+//   默认值为 THREE.LinearFilter，它采用四个最接近的纹素并在它们之间进行双线性插值。
+//      可选 THREE.NearestFilter，它使用最接近的纹素的值。
+colorTexture.minFilter = THREE.NearestFilter;
+colorTexture.magFilter = THREE.NearestFilter;
+
+// 是否为纹理生成 mipmap（如果可能）。默认为真。如果您手动创建 mipmap，请将其设置为 false。
+// Mipmapping 是一种基于每个纹理应用的纹理渲染技术。
+// 当启用 mipmapping（默认）时，GPU 将使用不同大小的纹理版本来渲染表面，具体取决于它与相机的距离。
+colorTexture.generateMipmaps = false;
+
+// Apply colorTexture
+const material = new THREE.MeshBasicMaterial({ map: colorTexture });
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+```
+
+
+
+----
+
+
 
 <img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-27-11.gif" style="zoom:50%;" />
 
@@ -701,6 +745,336 @@ texture Websites :
 - https://3dtextures.me
 - https://arroway-textures.ch/
 
-DIY Texture : 
+自己 DIY Texture : 
 
 - substance designer
+
+
+
+
+
+# Material 材质
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-1.gif)
+
+Material : put color on 每一个可见像素
+
+```js
+/* 前面是 Texture ... */
+
+// 6 张环境贴图, negative-x , positive-x , negative-y .....
+// 如果 object 表面光滑, 则可以映照出环境的图片 .
+const cubeTextureLoader = new THREE.CubeTextureLoader()
+cubeTextureLoader.setPath('/textures/environmentMaps/1/')
+const environmentMapTexture = cubeTextureLoader.load([
+  'px.jpg',
+  'nx.jpg',
+  'py.jpg',
+  'ny.jpg',
+  'pz.jpg',
+  'nz.jpg',
+])
+
+// Standard Material
+const material = new THREE.MeshStandardMaterial()
+// material.color = new THREE.Color(0xff0000)
+material.metalness = 0.8  // 材料多少像金属; 木材或石头等非金属材料使用 0.0，金属使用 1.0
+material.roughness = 0  // 粗糙度;  0.0 表示平滑镜面反射，1.0 表示完全漫反射。默认 1.0
+material.side = THREE.DoubleSide  // 双面显示, FrontSide 只显示前面; BackSide 只背面
+// material.matcap = matcaps8Texture
+// material.opacity = 0.5
+// material.transparent = true
+// material.alphaMap = doorAlphaTexture
+// material.map = colorTexture
+// material.displacementMap = heightTexture
+// material.displacementScale = 0.05
+// material.metalnessMap = metalnessTexture
+// material.roughnessMap = roughnessTexture
+// material.normalMap = normalTexture
+// material.normalScale.set(0.5, 0.5)
+material.envMap = environmentMapTexture  // 环境贴图(px/nx... 那 6 张 png)
+
+// Debug UI - gui 部分 ; 
+gui.add(material, 'metalness').min(0).max(1).step(0.0001)
+gui.add(material, 'roughness').min(0).max(1).step(0.0001)
+gui.add(material, 'side', {
+  Front: THREE.FrontSide,
+  Back: THREE.BackSide,
+  Double: THREE.DoubleSide,
+});  // 为啥不起作用
+
+// 在 Obj 里加入 Material ;
+const sphere = new THREE.Mesh(
+  new THREE.SphereBufferGeometry(0.5, 16, 16),
+  material
+)
+sphere.position.x = -1.5
+const plane = new THREE.Mesh(
+  new THREE.PlaneBufferGeometry(1, 1, 20, 20),
+  material
+)
+
+const torus = new THREE.Mesh(
+  new THREE.TorusBufferGeometry(0.3, 0.2, 16, 32),
+  material
+)
+```
+
+
+
+`material.envMap = environmentMapTexture` : 
+
+- 上面代码中用到的环境贴图 ; 
+- 更多可以见 : https://polyhaven.com/
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-043251.png" style="zoom:50%;" />
+
+
+
+
+
+
+
+
+
+## 环境贴图
+
+environmentMapTexture
+
+
+
+
+
+# 3D - Text
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-2.gif)
+
+```js
+const fontLoader = new THREE.FontLoader()
+const createText = (font) => {
+  const textGeometry = new THREE.TextBufferGeometry('Mauricio Paternina', {
+    font,
+    size: 0.5,
+    height: 0.2,
+    curveSegments: 5,
+    bevelEnabled: true,
+    bevelThickness: 0.03,
+    bevelSize: 0.02,
+    bevelOffset: 0,
+    bevelSegments: 4
+  })
+
+  textGeometry.center()  // 居中
+
+  const textMaterial = new THREE.MeshMatcapMaterial({ matcap: matcapTexture })
+  textMaterial.wireframe = true
+  gui.add(textMaterial, 'wireframe')  // Debug .. 
+  const text = new THREE.Mesh(textGeometry, textMaterial)
+  scene.add(text)
+
+  addDonuts(100)
+}
+
+fontLoader.load('/fonts/helvetiker_regular.typeface.json', createText)
+
+
+// Axis Helper 辅助中轴线，用来 Check Text 是否居中
+const axesHelper = new THREE.AxesHelper()
+scene.add(axesHelper)
+```
+
+
+
+`fontLoader` : 字体加载 ;
+
+`MeshMatcapMaterial` : MeshMatcapMaterial 不响应光照 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-045135.png" style="zoom:30%;" />
+
+
+
+
+
+# Lights 灯光
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-3.gif)
+
+> 如上图, 可以看到一个光源 , 和物体表面的反射 ( 可能看不清楚)
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-054204.png" style="zoom:50%;" />
+
+> 如上图,  看到光源 正发出黄色的光
+
+```js
+
+/**
+ * Lights
+ */
+//Three.color='0xffffff' 白色, 光照强度 intensity = 0.5 
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+
+// const pointLight = new THREE.PointLight(0xffffff, 0.5);
+// pointLight.position.x = 2;
+// pointLight.position.y = 3;
+// pointLight.position.z = 4;
+// scene.add(pointLight);
+
+const dirLight = new THREE.DirectionalLight(0x00fffc, 0.3);
+dirLight.position.set(1, 0.25, 0);
+scene.add(dirLight);
+
+const hemiLight = new THREE.HemisphereLight(0xff0000, 0x0000ff, 0.3);
+scene.add(hemiLight);
+
+const pointLight = new THREE.PointLight(0xff9000, 0.3, 10, 2);
+pointLight.position.set(1, -0.5, 1);
+scene.add(pointLight);
+
+const rectAreaLight = new THREE.RectAreaLight(0x4e00ff, 2, 1, 1);
+scene.add(rectAreaLight);
+rectAreaLight.position.set(-1.5, 0, 1.5);
+rectAreaLight.lookAt(new THREE.Vector3());
+
+const spotLight = new THREE.SpotLight(
+  0x78ff00,
+  0.5,
+  10,
+  Math.PI * 0.1,
+  0.25,
+  1
+);
+spotLight.position.set(0, 2, 3);
+spotLight.target.position.x = -0.75;
+scene.add(spotLight);
+scene.add(spotLight.target);
+
+
+const hemisphereLightHelper = new THREE.HemisphereLightHelper(hemiLight, 0.2);
+scene.add(hemisphereLightHelper);
+
+const directionalLightHelper = new THREE.DirectionalLightHelper(dirLight, 0.2);
+scene.add(directionalLightHelper);
+
+const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2);
+scene.add(pointLightHelper);
+
+const spotLightHelper = new THREE.SpotLightHelper(spotLight);
+scene.add(spotLightHelper);
+
+const rectAreaLightHelper = new RectAreaLightHelper(rectAreaLight);
+scene.add(rectAreaLightHelper);
+
+// 在下一帧对几个光源进行更新 , 前面可能有一些 bug , 所以要手动 update 下
+window.requestAnimationFrame(() => {
+  spotLightHelper.update();
+  rectAreaLightHelper.position.copy(rectAreaLight.position);
+  rectAreaLightHelper.quaternion.copy(rectAreaLight.quaternion);
+  rectAreaLightHelper.update();
+});
+```
+
+
+
+`xxxLightHelper`  : 各种样的 LightHelper 可以帮我们定位光源的位置 : 
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-063238.png)
+
+
+
+为什么总是要添加 Ambient Light ? 
+
+- 在实际场景中, 因为光到处反射, 所以即使在物体背部, 也能看到它 ; 
+- 但是 Three.js 很难模拟这种到处反射, 所以加一个昏暗的 Ambient 来模拟光的到处反射 ; 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-IMG_0773.jpg" style="zoom:40%;" />
+
+
+
+
+
+# Shaow 阴影
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-4.gif)
+
+https://threejs.org/docs/#api/en/lights/shadows/DirectionalLightShadow
+
+```js
+// Ambient light
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+gui.add(ambientLight, "intensity").min(0).max(1).step(0.001);
+scene.add(ambientLight);
+
+// Directional light
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+directionalLight.position.set(2, 2, -1);
+directionalLight.castShadow = true;  // default false
+directionalLight.shadow.mapSize.width = 1024;
+directionalLight.shadow.mapSize.height = 1024;
+directionalLight.shadow.camera.near = 1;
+directionalLight.shadow.camera.far = 6;
+directionalLight.shadow.camera.top = 2;
+directionalLight.shadow.camera.right = 2;
+directionalLight.shadow.camera.bottom = -2;
+directionalLight.shadow.camera.left = -2;
+
+scene.add(directionalLight);
+
+const dirLightCameraHelper = new THREE.CameraHelper(
+  directionalLight.shadow.camera
+);
+scene.add(dirLightCameraHelper);
+
+gui.add(directionalLight, "intensity").min(0).max(1).step(0.001);
+gui.add(directionalLight.position, "x").min(-5).max(5).step(0.001);
+gui.add(directionalLight.position, "y").min(-5).max(5).step(0.001);
+gui.add(directionalLight.position, "z").min(-5).max(5).step(0.001);
+dirLightCameraHelper.visible = false;
+
+directionalLight.shadow.radius = 10;
+
+const spotLight = new THREE.SpotLight(0xffffff, 0.3, 10, Math.PI * 0.3);
+spotLight.position.set(0, 2, 2);
+spotLight.castShadow = true;
+scene.add(spotLight);
+scene.add(spotLight.target);
+
+spotLight.shadow.mapSize.width = 1024;
+spotLight.shadow.mapSize.height = 1024;
+spotLight.shadow.camera.fov = 30;
+spotLight.shadow.camera.near = 1;
+spotLight.shadow.camera.far = 6;
+
+const spotLightHelper = new THREE.CameraHelper(spotLight.shadow.camera);
+scene.add(spotLightHelper);
+spotLightHelper.visible = false;
+
+const pointLight = new THREE.PointLight(0xffffff, 0.3);
+pointLight.castShadow = true;
+pointLight.position.set(-1, 1, 0);
+scene.add(pointLight);
+
+pointLight.shadow.mapSize.width = 1024;
+pointLight.shadow.mapSize.height = 1024;
+
+pointLight.shadow.camera.near = 0.1;
+pointLight.shadow.camera.far = 5;
+
+const pointLightHelper = new THREE.CameraHelper(pointLight.shadow.camera);
+scene.add(pointLightHelper);
+pointLightHelper.visible = false;
+```
+
+
+
+`DirectionalLight.castShadow`
+
+- 动态阴影: If set to `true`  , light will cast dynamic shadows. **Warning**: This is expensive
+
+
+
+
+
+# 应用 - 猎人小屋
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-5.gif)
