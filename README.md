@@ -608,3 +608,99 @@ npm i --save-dev dat.gui
 
 
 
+
+
+# Texture 质地
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-27-11.gif" style="zoom:50%;" />
+
+```js
+const colorTextureImageSourcePath = '/textures/door/color.jpg'
+
+// ...
+
+const loadingManager = new THREE.LoadingManager()
+
+loadingManager.onStart = (url, itemsLoaded, itemsTotal) =>
+  console.log(
+    `Started loading file: ${url}.\nLoaded ${itemsLoaded} of ${itemsTotal} files.`
+  )
+loadingManager.onLoad = () => console.log('Loading complete!')
+loadingManager.onProgress = (url, itemsLoaded, itemsTotal) =>
+  console.log(
+    `Loaded file: ${url}.\nLoaded ${itemsLoaded} of ${itemsTotal} files.`
+  )
+loadingManager.onError = (url) =>
+  console.log(`There was an error loading ${url}`)
+
+
+const colorTextureLoader = new THREE.TextureLoader(loadingManager)
+const colorTexture = colorTextureLoader.load(colorTextureImageSourcePath)
+
+// colorTexture.repeat.x = 2
+// colorTexture.repeat.y = 3
+// colorTexture.wrapS = THREE.MirroredRepeatWrapping
+// colorTexture.wrapT = THREE.MirroredRepeatWrapping
+// colorTexture.magFilter = THREE.NearestFilter
+```
+
+
+
+**Textures** are images that will **cover the surface of geometries**. There are many types fof textures.
+
+- **Color (or Albedo)** — It's the simplest one. It's applied on the geometry.
+- **Alpha** — 白色部分可见而黑色部分不可见的灰度图像。 Grayscale image with white part visible and black part not visible.
+- **Height (or Displacement)** — 灰度图像.  Grayscale image。移动顶点以创建一些浮雕。需要足够的细分 Move the vertices to create some relief. Requires enough subdivision.
+- Normal — 提供详细信息。不需要细分。顶点不会移动。将光线引向面部方向。添加具有大量细分的高度纹理的性能更好。 Provide details. Does not require subdivision. The vertices won't move. Lure the light on the face orientation. Better perf that adding a height texture with lots of subdivisions.
+- **Ambient Occlusion** — 灰度图像。在缝隙中添加假阴影。物理上不准确。有助于创建对比并查看细节。 Grayscale image. Add fake shadows to crevices. Physically inaccurate. Helps to create contrast and see details.
+- **Metalness** —主要用于反射。当白色时，它传达金属感。黑色时，表示非金属。  Grayscale image. Mostly used for reflection. When white, it conveys metallic. When black, it conveys non-metallic.
+- **Roughness** — 通常与金属度一起使用。白色时，它很粗糙。黑色时，它是光滑的。用于光消散 Grayscale image. Usually used with metalness. When white, it's rough. When black, it's smooth. Used for light dissipation.
+
+纹理（尤其是金属度和粗糙度）遵循 PBR 原则——基于物理的渲染，这种技术倾向于遵循现实生活中的方向以实现逼真的结果。
+
+
+
+## load textures
+
+首先，我们需要获取图像的路径。将图像添加到静态文件夹并像这样导入 : 
+
+```js
+const colorTextureImageSourcePath = '/textures/door/color.jpg'
+
+const colorTextureImage = new Image()
+const colorTexture = new THREE.Texture(colorTextureImage)
+
+colorTextureImage.addEventListener('load', () => {
+  colorTexture.needsUpdate = true
+})
+
+colorTextureImage.src = colorTextureImageSourcePath
+
+...
+const material = new THREE.MeshBasicMaterial({ map: colorTexture })
+...
+```
+
+
+
+## Using `TextureLoader`
+
+TextureLoader 的一个实例可以加载多个纹理。
+
+实例可传递三个函数： load, progress, error.
+
+- load : 纹理加载状态 ; 
+- progress : 纹理加载过程 ;
+- error : 错误处理 ;
+
+
+
+texture Websites : 
+
+- https://poliigon.com
+- https://3dtextures.me
+- https://arroway-textures.ch/
+
+DIY Texture : 
+
+- substance designer
