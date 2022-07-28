@@ -169,6 +169,7 @@ animate()
 `requestAnimationFrame` : 
 
 - 对于动画函数，我们使用 requestAnimationFrame 而不是 setInterval。前者的优点是当用户导航到另一个浏览器选项卡时暂停动画，因此不会浪费他们宝贵的处理能力和电池寿命。
+- requestAnimationFrame 请求浏览器定时回调 `animate()` 函数 
 
 
 
@@ -332,6 +333,53 @@ animate()
 
 # Cameras
 
+## Perspective 透视摄像机
+
+第一种也是我们最常用到的 PerspectiveCamera 透视摄像机
+
+因为它和我们人眼成像的原理类似  ,看到的物体会呈现近大远小的透视效果 , 所以被广泛应用在三维渲染中
+
+在渲染的时候 , 会将三维物体投影到二维屏幕上 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-150453.png" style="zoom:50%;" />
+
+
+
+
+
+## Orthographic 正交投影摄像机
+
+另一种相机是 OrthographicCamera 正交投影摄像机
+
+它会将空间中的**所有物体平行投射到投影面上** , 因此不会像透视相机那样星现近大远小的效果
+
+正交相机主要是被用在像 CAD 这类需要精确测量物体尺寸的应用场景中, 比如用正交投影我们可以轻易渲染出物体的三视图等等
+
+正交相机的视锥 (Frustum) 是一个长方体 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-150740.png" style="zoom:50%;" />
+
+因此要定义一个正交相机 , 需要指定它**前后左右上下**这六个面的位置
+
+```js
+const camera = new THREE.OrthographicCamera(
+  -1, // left
+  1,  // right
+  1,  // top
+  1,  // bottom
+  1,  // near
+  100,  // far
+}
+```
+
+
+
+-----
+
+## 实例
+
+
+
 <img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-27-7.gif" style="zoom:50%;" />
 
 ```js
@@ -374,13 +422,15 @@ const animate = () => {
 animate()
 ```
 
+**`camera.lookAt(cube.position)`** :  让相机看向空间中的某一个点
 
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-6.gif)
 
-**`camera.lookAt(cube.position)`** :  看往何处
+​	
 
 -----
 
-## OrbitControls
+### OrbitControls
 
 ```js
 
@@ -754,6 +804,144 @@ texture Websites :
 
 
 # Material 材质
+
+不同的材质, 在光照下会呈现不一样的效果 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-143127.png" style="zoom:50%;" />
+
+通过材质, 可以给物体设置
+
+- 颜色 
+- 光泽度
+- 贴图 等 ...
+
+
+
+`MeshBasicMaterial` : 
+
+- 不参与光照计算 (Unlit) , 因此不会产生阴影
+- 使用这种材质的三维物体看上去也很不真实
+
+`Phong/Lambert` : 
+
+- 可以实现光照效果 , 这 2 种材质实现了图形学中最基本的光照模型 ; 
+- 可通过 `shininess` 来调节物体表面的光泽度 ;
+- 通过 `map` 给物体表面贴上纹理 
+
+`ToonMaterial` : 卡通画材质 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-145735.png" style="zoom:30%;" />
+
+
+
+## Physically Based 基于物理的渲染
+
+**Physically Based rendering : 基于物理的渲染**
+
+除了 `MeshBasicMaterial / Phong / Lambert` , Three.js 还提供效果更好的, 也是被更加使用广泛的基于物理的材质 ( 计算量更大, 但是效果更逼真) : 
+
+- `MeshStandardMaterial` 
+- `MeshPhysicalMaterial` 
+
+
+
+比如 : 
+
+### 1. map 贴 Texture : 
+
+先用 map 属性, 给物体贴上纹理 Texture : 
+
+```js
+const material = new Three.MeshStandardMaterial({
+  map: loadTexture('rock/albedo.png')
+})
+```
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-144137.png" style="zoom:50%;" />
+
+
+
+### 2. RoughnessMap 设定粗糙度
+
+用 `roughnessMap` 采设定表面不同位置的粗糙程度 : 
+
+```js
+const material = new Three.MeshStandardMaterial({
+  map: loadTexture('rock/albedo.png'),
+  RoughnessMap: loadTexture('rock/roughness.png'),
+})
+```
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-144336.png" style="zoom:50%;" />
+
+
+
+### 3. normalMap 法线贴图
+
+接着我们可以用 `normalMap` 也就是**法线贴图**来给**每个像素点 设置不同的法向量**
+
+法线会影响光照的计算 , 因此我们可以用它来模拟物体表面凹凸不平的效果
+
+```js
+const material = new Three.MeshStandardMaterial({
+  map: loadTexture('rock/albedo.png'),
+  RoughnessMap: loadTexture('rock/roughness.png'),
+  normalMap: loadTexture('rock/normal.png'),
+})
+```
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-144821.png" style="zoom:50%;" />
+
+
+
+### 4. displacementMap 位移贴图
+
+进一步，我们可以使用 `displacementMap` 来指定一个位移贴图 ( 或者叫高度贴图)
+
+它会依据贴图**上下偏移物体表面的顶点坐标**
+
+从而做到真正的物体**表面的起伏**
+
+```js
+const material = new Three.MeshStandardMaterial({
+  map: loadTexture('rock/albedo.png'),
+  RoughnessMap: loadTexture('rock/roughness.png'),
+  normalMap: loadTexture('rock/normal.png'),
+  displacementMap: loadTexture('rock/height.png'),
+})
+```
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-145252.png" style="zoom:50%;" />
+
+
+
+### 5. aoMap 环境光遮罩
+
+最后我们还可以通过 `aoMap(Ambient Occlusion)`  指定一个 “环境光遮罩” 的贴图
+
+简单来说，它会让被遮蔽的区域 (比如坑洞) 看起来**更暗**
+
+从而进一步提升场景的真实感
+
+```js
+const material = new Three.MeshStandardMaterial({
+  map: loadTexture('rock/albedo.png'),
+  RoughnessMap: loadTexture('rock/roughness.png'),
+  normalMap: loadTexture('rock/normal.png'),
+  displacementMap: loadTexture('rock/height.png'),
+  aoMap:  loadTexture('rock/ao.png'),
+})
+```
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-145611.png" style="zoom:50%;" />
+
+
+
+
+
+----
+
+## 实例
 
 ![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-1.gif)
 
