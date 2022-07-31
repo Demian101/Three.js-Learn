@@ -1266,3 +1266,795 @@ pointLightHelper.visible = false;
 # 应用 - 猎人小屋
 
 ![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-28-5.gif)
+
+
+
+
+
+
+
+
+
+# Particles / Sprite
+
+## Geometry Points (球形) 几何点 : 
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-29-2.gif)
+
+```js
+import "./style.css";
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+
+const gui = new dat.GUI();
+const canvas = document.querySelector("canvas.webgl");
+const scene = new THREE.Scene();
+
+const textureLoader = new THREE.TextureLoader();
+
+const particleGeometry = new THREE.SphereBufferGeometry(1, 32, 32);
+
+// Material  : 
+const particleMaterial = new THREE.PointsMaterial()
+
+particleMaterial.size = 0.02
+particleMaterial.Attenuation = true
+
+// Points : 
+const particles = new THREE.Points(particleGeometry, particleMaterial);
+scene.add(particles);
+
+const sizes = {
+  width: window.innerWidth,
+  height: window.innerHeight,
+};
+
+
+
+
+/* 通用部分 */
+window.addEventListener("resize", () => {
+  // Update sizes
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
+
+  // Update camera
+  camera.aspect = sizes.width / sizes.height;
+  camera.updateProjectionMatrix();
+
+  // Update renderer
+  renderer.setSize(sizes.width, sizes.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
+
+// Base camera
+const camera = new THREE.PerspectiveCamera(
+  75,
+  sizes.width / sizes.height,
+  0.1,
+  100
+);
+camera.position.z = 3;
+scene.add(camera);
+
+// Controls
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+
+/* Renderer */
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvas,
+});
+renderer.setSize(sizes.width, sizes.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+/* Animate */
+const clock = new THREE.Clock();
+
+const animate = () => {
+  const elapsedTime = clock.getElapsedTime();
+  controls.update();
+  renderer.render(scene, camera);
+  window.requestAnimationFrame(tick);
+};
+animate();  // end of file.
+```
+
+
+
+
+
+## 随机点 (边缘问题)
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-29-3.gif" style="zoom:67%;" />
+
+```js
+const particleGeometry = new THREE.BufferGeometry();
+
+const count = 50000
+
+const positions = new Float32Array(count*3);  // x/y/z 坐标
+const colors = new Float32Array(count*3);  // R、G、B 坐标，所以也是 3 
+
+for (let i = 0; i < count * 3; i++) {
+  positions[i] = (Math.random() - 0.5) * 5 ; // random() 的范围是 0 ~ 1， 故 -0.5 ；
+  colors[i] = Math.random();
+}
+
+particleGeometry.setAttribute(
+  "position",
+  new THREE.BufferAttribute(positions, 3)  // xyz
+);
+particleGeometry.setAttribute(
+  "color",
+  new THREE.BufferAttribute(colors, 3)  // xyz
+);
+
+
+// Material  : 
+const particleMaterial = new THREE.PointsMaterial()
+
+particleMaterial.size = 0.02
+particleMaterial.Attenuation = false 
+particleMaterial.color = new THREE.Color('yellow') // #ff88cc
+particleMaterial.transparent = true
+particleMaterial.alphaMap = particleTexture  // 使用纹理，定义粒子的形状
+// particleMaterial.alphaTest = 0.001
+// particleMaterial.depthTest = false
+particleMaterial.depthWrite = false
+particleMaterial.vertexColors = true  // 为颜色添加顶点
+
+// Points : 
+const particles = new THREE.Points(particleGeometry, particleMaterial);
+scene.add(particles);
+```
+
+
+
+边缘处理 : 如果不做处理 , 可以明显地看到正方形的边缘 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-29-083007.png" style="zoom:50%;" />
+
+```js
+/* 如下 3 个方法都可以处理 粒子的相互覆盖 / 穿越问题, 但是综合起来 , 
+  depthWrite = false 效果是最好的 */ 
+// particleMaterial.alphaTest = 0.001
+// particleMaterial.depthTest = false
+particleMaterial.depthWrite = false
+```
+
+综合来看 , depthWrite 是一个较好的选择 ; 
+
+
+
+
+
+
+
+
+
+
+
+## particles 运动
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-29-1.gif" style="zoom:80%;" />
+
+
+
+```js
+const particleTexture = textureLoader.load("/textures/particles/11.png");
+
+const particleGeometry = new THREE.BufferGeometry();
+const dimension = 3;
+const count = 20000;
+const total = dimension * count;
+const positions = new Float32Array(total);
+const colors = new Float32Array(total);
+for (let i = 0; i < total; i++) {
+  positions[i] = ky.randomNumberInRange(-0.5, 0.5) * 10;
+  colors[i] = ky.randomNumberInRange(0, 1);
+}
+particleGeometry.setAttribute(
+  "position",
+  new THREE.BufferAttribute(positions, dimension)
+);
+particleGeometry.setAttribute(
+  "color",
+  new THREE.BufferAttribute(colors, dimension)
+);
+
+const particleMaterial = new THREE.PointsMaterial({
+  size: 0.1,
+  // color: new THREE.Color("#ff88cc"),
+  alphaMap: particleTexture,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexColors: true,
+});
+const particles = new THREE.Points(particleGeometry, particleMaterial);
+scene.add(particles);
+
+/**
+ * Animate
+ */
+const clock = new THREE.Clock();
+
+const animate = () => {
+  const elapsedTime = clock.getElapsedTime();
+
+  // particles.rotation.y = elapsedTime * 0.2;
+
+  for (let i = 0; i < count; i++) {
+    const group = i * dimension;
+    const yAxis = group + 1;
+    const xValue = particleGeometry.attributes.position.array[group];
+    particleGeometry.attributes.position.array[yAxis] = Math.sin(
+      elapsedTime + xValue
+    );
+  }
+
+  particleGeometry.attributes.position.needsUpdate = true;
+
+  // Update controls
+  controls.update();
+
+  // Render
+  renderer.render(scene, camera);
+
+  // Call tick again on the next frame
+  window.requestAnimationFrame(tick);
+};
+
+animate();
+```
+
+
+
+
+
+# Galaxy Generator 星系发生器
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-30-1.gif)
+
+
+
+```js
+const dimension = 3;
+
+const params = {
+  count: 100000,
+  size: 0.01,
+  radius: 5,   // 星系半径
+  branches: 3,
+  spin: 1,
+  randomness: 0.2,
+  randomnessPower: 2,
+  insideColor: "#ff6030",  // orange red
+  outsideColor: "#1b3984", // deep blue
+};
+
+let geometry = null;
+let materail = null;
+let points = null;
+
+// 星系创建，每次调用这个函数，都需要移除上一次创建的星系
+const generateGalaxy = () => {
+  if (points) {
+    geometry.dispose();   // dispose： free the memory
+    materail.dispose();
+    scene.remove(points);
+  }
+
+  geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(params.count * dimension);  // *3(x/y/z)
+  const colors = new Float32Array(params.count * dimension);  // *3(r/g/b)
+
+  for (let i = 0; i < params.count; i++) {
+    const i3 = i * dimension;
+    const rdn_range_0_1 = ky.randomNumberInRange(0, 1)
+    const radius_ =  rdn_range_0_1 * params.radius;  // 星系半径 * (0,1) 之间的的随机值
+    const branchAngle =
+      ((i % params.branches) / params.branches) * ky.deg2rad(360);
+    const spinAngle = params.spin * radius_;  // 离星系中心越远，旋转越发散
+
+    // 增加一些随机性
+    const randomX =
+      Math.pow(Math.random(), params.randomnessPower) *
+      (Math.random() < 0.5 ? 1 : -1) *
+      params.randomness * radius_;
+    const randomY =
+      Math.pow(Math.random(), params.randomnessPower) *
+      (Math.random() < 0.5 ? 1 : -1) *
+      params.randomness * radius_;
+    const randomZ =
+      Math.pow(Math.random(), params.randomnessPower) *
+      (Math.random() < 0.5 ? 1 : -1) *
+      params.randomness * radius_;
+    positions[i3] = Math.cos(branchAngle + spinAngle) * radius_ + randomX;
+    positions[i3 + 1] = randomY;
+    positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius_ + randomZ;
+
+    const colorInside = new THREE.Color(params.insideColor);
+    const colorOutside = new THREE.Color(params.outsideColor);
+    /* 
+     * lerp(color, alpha) : 
+     *   ① 参数是要变成的颜色 
+     *   ② 是插值因子，因子越大，越接近 color 参数
+     * 这里传入的 alpha 参数就是 rdn_range_0_1 这个随机值 ( 上面定义了 rdn_range_0_1 = radius_ / params.radius)
+     * 核心逻辑是 ： 
+     *    rdn_range_0_1 越小，距离星系中心越近，颜色越接近 colorInside(红色)，说明星系就炽热
+     *    rdn_range_0_1 越大，距离星系中心越远，颜色越接近 colorOutside(蓝色)，说明星系就冷寂
+    */
+    const mixedColor = colorInside.clone();
+    mixedColor.lerp(colorOutside, radius_ / params.radius); 
+    colors[i3]     = mixedColor.r;
+    colors[i3 + 1] = mixedColor.g;
+    colors[i3 + 2] = mixedColor.b;
+  }
+
+  // shaders
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, dimension));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, dimension));
+
+  materail = new THREE.PointsMaterial({
+    size: params.size,
+    sizeAttenuation: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true,   // 别忘了标识 Color 的顶点属性
+  });
+
+  points = new THREE.Points(geometry, materail);
+  scene.add(points);
+};
+
+generateGalaxy();
+
+// 每当参数变化，都需要调用 generateGalaxy 重新创建星系
+gui
+  .add(params, "count")
+  .min(100)
+  .max(1000000)
+  .step(100)
+  .onFinishChange(generateGalaxy); 
+gui
+  .add(params, "size")
+  .min(0.001)
+  .max(0.1)
+  .step(0.001)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(params, "radius")
+  .min(0.001)
+  .max(20)
+  .step(0.001)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(params, "branches")
+  .min(2)
+  .max(20)
+  .step(1)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(params, "spin")
+  .min(-3)
+  .max(3)
+  .step(0.001)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(params, "randomness")
+  .min(0)
+  .max(1)
+  .step(0.002)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(params, "randomnessPower")
+  .min(1)
+  .max(10)
+  .step(1)
+  .onFinishChange(generateGalaxy);
+gui.addColor(params, "insideColor").onFinishChange(generateGalaxy);
+gui.addColor(params, "outsideColor").onFinishChange(generateGalaxy);
+```
+
+
+
+`dispose` ： free the memory
+
+- 用来释放内存 , 防止生成的星系相互覆盖 ; 
+
+`insideColor -> outsideColor  `  :营造星球从星系内部 ( 灼热/ 红色 ) 到 星系外部 (冷寂 / 深蓝) 的颜色变化 ; 
+
+- `Lerp()` : 将此颜色的 RGB 值线性插值到传递参数的 RGB 值
+
+```js
+const mixedColor = colorInside.clone();
+mixedColor.lerp(colorOutside, radius_ / params.radius);
+  colors[i3]     = mixedColor.r;
+  colors[i3 + 1] = mixedColor.g;
+  colors[i3 + 2] = mixedColor.b;
+```
+
+
+
+
+
+# raycaster 光线投射器
+
+- Detect if there is a wall in front of the player ; 检测玩家面前是否有墙
+- Test if the laser gun hit something. 测试激光枪是否击中某物。
+- Test if something is currently under the mouse to simulate mouse events. 测试当前是否有东西在鼠标下方以模拟鼠标事件
+- Show an alert message if the spaceship is heading towards a planet   如果飞船正驶向行星，则显示警报消息
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-30-064037.png" style="zoom:50%;" />
+
+```js
+const getNormalizedMousePos = (e) => {
+  return {
+    // e.clientX 标识了鼠标的 X 位置, 单位是像素
+    // *2 后 -1 ， 得到 [-1,1 ] 范围的数值
+    x: (e.clientX / window.innerWidth) * 2 - 1,
+    y: -(e.clientY / window.innerHeight) * 2 + 1,
+  };
+};
+
+
+const tick = () => {
+  const elapsedTime = clock.getElapsedTime();
+
+  const objs = [object1, object2, object3];
+
+  objs.forEach((obj, i) => {
+    obj.position.y = Math.sin(elapsedTime * speeds[i]) * 1.5;
+  });
+
+  const raycasterOrigin = new THREE.Vector3(-3, 0, 0);
+  const raycasterDirection = new THREE.Vector3(1, 0, 0);
+  raycasterDirection.normalize();
+
+  raycaster.set(raycasterOrigin, raycasterDirection);
+
+  // 使用 camera 和 mouse 位置更新 picking ray
+  raycaster.setFromCamera(mouse, camera);
+
+  // 计算与 picking ray 相交的对象
+  const intersects = raycaster.intersectObjects(objs);
+  // console.log(intersects);
+
+  // 设置为蓝色
+  for (const intersect of intersects) {
+    intersect.object.material.color.set("#0000ff");
+  }
+
+  // 设置回红色
+  for (const obj of objs) {
+    if (!intersects.find((intersect) => intersect.object === obj)) {
+      obj.material.color.set("#ff0000");
+    }
+  }
+
+  if (intersects.length) {
+    if (!currentIntersect) {
+      console.log("mouseenter");
+    }
+    currentIntersect = intersects[0];
+  } else {
+    if (currentIntersect) {
+      console.log("mouseleave");
+    }
+    currentIntersect = null;
+  }
+
+  // Update controls
+  controls.update();
+
+  // Render
+  renderer.render(scene, camera);
+
+  // Call tick again on the next frame
+  window.requestAnimationFrame(tick);
+};
+
+tick();
+```
+
+
+
+
+
+# Physics ! 物理 !
+
+引入 library : `CANNON.js` 
+
+```
+schteppe/cannon.js @ GitHub
+https://schteppe.github.io/cannon.js/
+```
+
+文档地址 : 
+
+- https://pmndrs.github.io/cannon-es/docs/modules.html
+
+
+
+
+
+## 创建世界
+
+```js
+const world=new CANNON.World()    //创建 cannon世界
+world.gravity.set(0,-9.82,0)    //设置重力方向
+
+// 创建CANNON 球体
+const sphereBody = new CANNON.Body({
+  mass:1,
+  position:new CANNON.Vec3(0,3,0),
+  shape:new CANNON.Sphere(0.5)
+})
+
+// 将物体加入 世界中
+world.addBody(sphere)
+
+// 设置步进时间
+world.step(1/60,deltaTime,3)
+
+// 绑定 THREEjs - CANNONjs 两个球体位置关联
+sphere.position.copy(sphereBody.position)
+
+// 创建平台 Plat floor
+const floorBody = new CANNON.Body({
+  mass:0,
+  shape:new CANNON.Plane()
+})
+world.addBody(floorBody)
+
+
+// 给小球和平台添加材质
+const defaultMat=new CANNON.Material('default')
+const defaultContactMaterial=new CANNON.ContactMaterial(defaultMat,defaultMat,{
+  friction:0.6,
+  restitution:0.3
+})
+world.addContactMaterial(defaultContactMaterial)
+```
+
+
+
+## 给一个小球一个方向力
+
+```js
+
+const sphereBody=new CANNON.Body({
+  mass:1,
+  position:new CANNON.Vec3(0,3,0),
+  shape:new CANNON.Sphere(0.5),
+  material:defaultContactMaterial
+})
+sphereBody.applyLocalForce(new Vec3(150,0,0))
+world.addBody(sphereBody)
+```
+
+<img src="https://img-blog.csdnimg.cn/eac2a5c1d5f742b8a4594d5fd57cbf72.gif" style="zoom:40%;" />
+
+
+
+
+
+## gui 链式创建多个球体
+
+```js
+const guiObj={}
+guiObj.createSphere = () => {
+  createSphere( Math.random()*0.5, 
+    {
+      x: (Math.random()-0.5)*3,
+      y: 3,
+      z: (Math.random()-0.5)*3
+    }),
+}
+gui.add(guiObj,'createSphere')
+```
+
+
+
+创建方块  :
+
+```js
+const box=new THREE.BoxBufferGeometry(1,1,1)
+const boxMaterial=new THREE.MeshStandardMaterial({
+  roughness:0.4,
+  metalness:0.3,
+})
+const createBox=(width,height,depth,position)=>{
+  const mesh=new Mesh(box,boxMaterial)
+   mesh.scale.set(width,height,depth)
+  mesh.castShadow=true
+  mesh.position.copy(position)
+  const body=new CANNON.Body({
+    mass:1,
+    position:new Vec3().copy(position),
+    shape:new CANNON.Box(new CANNON.Vec3(width,height,depth)),
+    material:defaultContactMaterial
+  })
+  objsToUpdate.push({mesh,body})
+  scene.add(mesh)
+  world.addBody(body)
+}
+ 
+/* ...
+   ...
+   ... */
+guiObj.createBox=()=>{
+   createBox(Math.random()*0.5,Math.random()*0.5,Math.random()*0.5,{x:(Math.random()-0.5)*3,y:3,z:(Math.random()-0.5)*3})
+}
+gui.add(guiObj,'createBox')
+```
+
+
+
+
+
+
+
+
+
+
+
+## 碰撞检测性能优化
+
+### 1. 粗测阶段(BroadPhase)
+
+`cannon.js` 会一直测试物体是否与其他物体发生碰撞，这非常消耗CPU性能，这一步成为 BroadPhase。当然我们可以选择不同的BroadPhase 来更好的提升性能。 
+
+- `NaiveBroadphase` (默认) —— 测试所有的刚体相互间的碰撞。
+- `GridBroadphase` —— 使用四边形栅格覆盖 world，仅针对同一栅格或相邻栅格中的其他刚体进行碰撞测试。
+- `SAPBroadphase(Sweep And Prune)` —— 在多个步骤的任意轴上测试刚体。
+
+默认 broadphase 为 NaiveBroadphase，建议切换到 SAPBroadphase。
+
+当然如果物体移动速度非常快，最后还是会产生一些bug。
+
+切换到SAPBroadphase只需如下代码
+
+```js
+world.broadphase=new CANNON.SAPBroadphase(world)
+```
+
+
+
+### 2. 睡眠Sleep
+
+虽然我们使用改进的 BroadPhase 算法，但所有物体还是都要经过测试，即便是那些不再移动的刚体。
+
+因此我们需要当刚体移动非常非常缓慢以至于看不出其有在移动时，我们说这个刚体进入睡眠，除非有一股力施加在刚体上来唤醒它使其开始移动，否则我们不会进行测试。
+
+只需以下一行代码即可
+
+```js
+world.allowSleep=true
+```
+
+当然我们也可以通过Body的sleepSpeedLimit属性或sleepTimeLimit属性来设置刚体进入睡眠模式的条件。
+
+- sleepSpeedLimit ——如果速度小于此值，则刚体被视为进入睡眠状态。
+- sleepTimeLimit —— 如果刚体在这几秒钟内一直处于沉睡，则视为处于睡眠状态。
+  
+
+
+
+## 添加碰撞音效 
+
+通过collide 来监听 碰撞事件 ,
+
+碰撞强度可以通过 `contact`属性中的 `getImpactVelocityAlongNormal()`方法获取到
+
+因此我们只要当碰撞强度大于某个值时再触发音效就行了
+
+```js
+const playHitSound=(collision)=>{
+  if(collision.contact.getImpactVelocityAlongNormal()>1.5){
+    hitSound.currentTime=0;
+    hitSound.volume=Math.random()
+    hitSound.play();
+  }
+}
+```
+
+
+
+## Web Worker
+
+由于 JavaScript 是单线程模型，即所有任务只能在同一个线程上面完成，前面的任务没有做完，后面的就只能等待，这对于日益增强的计算能力来说不是一件好事。所以在 HTML5 中引入了 Web Worker 的概念，来为 JavaScript 创建多线程环境，将其中一些任务分配给 Web Worker 运行，二者可以同时运行，互不干扰。Web Worker 是运行在后台的  JavaScript，独立于其他脚本，不会影响页面的性能。
+
+在计算机中做物理运算的是 CPU ，负责 WebGL 图形渲染的是GPU。现在我们的所有事情都是在 CPU 中的同一个线程完成的，所以该线程可能很快就过载，而解决方案就是使用 worker。
+
+我们通常把进行物理计算的部分放到 worker 里面，具体可看这个例子的源码
+
+
+
+
+
+
+# 导入 3D models
+
+
+
+```js
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+
+
+/**
+ * Floor 地板
+ */
+const floor = new THREE.Mesh(
+    new THREE.PlaneBufferGeometry(10, 10),
+    new THREE.MeshStandardMaterial({
+        color: '#444444',
+        metalness: 0,
+        roughness: 0.5
+    })
+)
+floor.receiveShadow = true
+floor.rotation.x = - Math.PI * 0.5
+scene.add(floor)
+
+
+
+/** 
+ * Loader 3D model  
+ */
+
+/* gltfLoader */
+const gltfLoader = new GLTFLoader()
+const dracoLoader = new DRACOLoader()
+dracoLoader.setDecoderPath('/draco/')
+gltfLoader.setDRACOLoader(dracoLoader)
+
+
+let mixer = null;
+
+gltfLoader.load('/models/Fox/glTF/Fox.gltf', gltf => {
+    console.log(gltf)
+    const fox = gltf.scene
+    console.log(fox)
+    fox.scale.set(0.025, 0.025, 0.025)
+    scene.add(fox)
+    mixer = new THREE.AnimationMixer(scene)
+    const action = mixer.clipAction(gltf.animations[0])
+    action.play()
+})
+
+
+
+const clock = new THREE.Clock()
+let previousTime = 0
+
+const tick = () => {
+    const elapsedTime = clock.getElapsedTime()
+    const deltaTime = elapsedTime - previousTime
+    previousTime = elapsedTime
+
+    if(mixer) {
+        mixer.update(deltaTime)
+    }
+    // Update controls
+    controls.update()
+
+    // Render
+    renderer.render(scene, camera)
+
+    // Call tick again on the next frame
+    window.requestAnimationFrame(tick)
+}
+tick()
+```
+
+
+
+`DRACOLoader` : 
+
+- 使用 Draco 库压缩的几何图形加载器。 Draco 是一个开源库，用于压缩和解压缩 3D meshes and point clouds.
