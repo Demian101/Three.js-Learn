@@ -2125,3 +2125,60 @@ gui
   .onFinishChange(updateAllMats);
 ```
 
+
+
+
+
+
+
+
+
+# Shader
+
+能在屏幕上着色或绘制某些东西的程序我们称之为Shader。
+
+Shader是运行在 GPU (Graphic Processing Unit 图形处理单元) 上的一组指令，。
+
+
+
+Shaders 以不同功能进行分类。
+
+- **顶点着色器 Vertex shader**
+- **像素着色器 Pixel shader**
+- 几何着色器 Geometry shader
+- 计算着色器 Compute shader
+- 细分曲面着色器 Tessellation / hull shader
+
+
+
+**为什么我们需要 Shader ？**
+
+当我们在屏幕上绘制或显示一些物体时，这些物体的显示形式是图元 Primitives 或者网格 Mesh。
+
+比如游戏中一个几何模型角色 或 一个贴在网格上的纹理角色，做阴影效果时先绘制网格, 再计算阴影，
+
+比如一个发射物体发射前需要先绘制该物体外形网格。这些物体都可归结为网格 Mesh 
+
+它可被分解为图元 Privitive，即 Privitive 是 Mesh 的基本单位。图元 Privitive 有三角形、直线或点。
+
+
+
+当我们在屏幕上画一个三角形时，我们首先要绘制顶点 Vertex ，因为网格 Mesh 由顶点 Vertex 组成
+
+此时就要用到 Vertex shader 顶点着色器, 我们将顶点信息 给 顶点着色器，以显示顶点信息。
+
+其次是在这些顶点组成的区域之间填充颜色，此时用到像素着色器 Pixel shader 或 Fragment shader。
+
+fragment（片段）有助于定义像素的最终颜色。
+
+
+
+曲面细分着色器 Tessellation shader 或 Hull shader 是较后加入到 OpenGL4.0 和 DirectX 3d 11的。
+
+Tessellation shader 主要用于细分网格。在 2016 年的 WWDC（Apple开发者大会）中，苹果发布会中讲到 Metal（苹果的图形API）上新的曲面细分管线 Tessellation pipeline，这个细分管线是 fixed function shader，固定渲染管线是嵌入硬件中不可外界编程的。
+
+
+
+几何着色器 Geometry shader 可以操作几何上的图元。几何着色器以图元 Primitive 作为输入，就像顶点着色器以顶点作为输入。
+
+在渲染管线顺序中，几何着色器就夹在顶点着色器和像素着色器中间。接下来是 Compute shader。Compute shader 是一个通用的着色器，它使用在渲染管线之外，即它不是用来绘制一个图元或渲染像素的。那它是用与什么的呢？ Compute shader 利用 GPUs 的并行计算处理能力来做通用计算任务。
