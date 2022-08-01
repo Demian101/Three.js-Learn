@@ -2058,3 +2058,70 @@ tick()
 `DRACOLoader` : 
 
 - 使用 Draco 库压缩的几何图形加载器。 Draco 是一个开源库，用于压缩和解压缩 3D meshes and point clouds.
+
+
+
+
+
+
+
+## Realistic Render
+
+真实感渲染, 从 `gLTF`  导入的模型颜色有问题, 真实感缺失 ;
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-07-31-QQ20220731-173136.gif)
+
+
+
+```js
+const gltfLoader = new GLTFLoader();
+gltfLoader.load("/models/hamburger.glb", (gltf) => {
+  const burger = gltf.scene;
+  burger.scale.set(0.3, 0.3, 0.3);
+  burger.position.set(0, -1, 0);
+  scene.add(burger);
+  updateAllMats();
+});
+
+/* TextureLoader */
+const cubeTextureLoader = new THREE.CubeTextureLoader();
+const envMap = cubeTextureLoader.load([
+  "/textures/environmentMaps/0/px.jpg",
+  "/textures/environmentMaps/0/nx.jpg",
+  "/textures/environmentMaps/0/py.jpg",
+  "/textures/environmentMaps/0/ny.jpg",
+  "/textures/environmentMaps/0/pz.jpg",
+  "/textures/environmentMaps/0/nz.jpg",
+]);
+scene.background = envMap;
+scene.environment = envMap;
+envMap.encoding = THREE.sRGBEncoding;
+
+
+/* gltfLoader.load 中调用的 updateAllMats (更新 Material) */
+const updateAllMats = () => {
+  scene.traverse((child) => {
+    if (
+      child instanceof THREE.Mesh &&
+      child.material instanceof THREE.MeshStandardMaterial
+    ) {
+      console.log(child);
+      child.material.envMap = envMap;
+      child.material.envMapIntensity = debug.envMapIntensity;
+      child.material.needsUpdate = true;
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+};
+
+
+/* gui 更新也会调用 onFinishChange 来更新 Material ; */
+gui
+  .add(debug, "envMapIntensity")
+  .min(0)
+  .max(10)
+  .step(0.001)
+  .onFinishChange(updateAllMats);
+```
+
