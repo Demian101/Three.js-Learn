@@ -349,7 +349,7 @@ void main(){
     // gl_FragColor = vec4(1, 0, 1   ,1.);
     // gl_FragColor = vec4(vUv.x, vUv.x, 1, 1.);
     // gl_FragColor=pat1();
-    gl_FragColor=pat2();
+    // gl_FragColor=pat2();
     // gl_FragColor=pat3();
     // gl_FragColor=pat4();
     // gl_FragColor=pat5();
@@ -359,6 +359,7 @@ void main(){
     // gl_FragColor=pat9();
     // gl_FragColor=pat10();
     // gl_FragColor=pat11();
+    // gl_FragColor=pat12();
     // gl_FragColor=pat13();
     // gl_FragColor=pat14();
     // gl_FragColor=pat15();
@@ -367,7 +368,7 @@ void main(){
     // gl_FragColor=pat18();
     // gl_FragColor=pat19();
     // gl_FragColor=pat20();
-    // gl_FragColor=pat21();
+    gl_FragColor=pat21();
     // gl_FragColor=pat22();
     // gl_FragColor=pat23();
     // gl_FragColor=pat24();

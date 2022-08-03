@@ -2725,5 +2725,167 @@ vec4(vUv.x, vUv.y, 1, 1.);
 
 
 
+## Other Patterns
 
+由上 -> 下白黑渐变 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-092419.png" style="zoom:50%;" />
+
+```glsl
+varying vec2 vUv;
+
+vec4 pat4(){
+    float strength=vUv.y;
+    return vec4(vec3(strength),1.); // 即 vec4(vUv.y, vUv.y, vUv.y, 1)
+}
+
+void main(){
+  gl_FragColor=pat4();
+}
+```
+
+讲解: 
+
+- ` vec4(vUv.y, vUv.y, vUv.y, 1)` , 从上到下 ,  vUv.y 是由 1 -> 0 的 ; 
+- 即 `vec4(1,1,1, 1) 白 ->  vec4(0,0,0, 1) 黑`
+
+
+
+----
+
+由上 -> 下**黑白**渐变 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-093140.png" style="zoom:50%;" />
+
+- 需要用 `invert`  函数 , 
+
+```glsl
+vec4 pat5(){
+    float strength=invert(vUv.y);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+-----
+
+白色区域很大 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-093217.png" style="zoom:50%;" />
+
+- `vUv.y * 10` 
+  - vec4 会在内部进行 (0, 1) 标准化吗 ? .. 
+
+```glsl
+vec4 pat6(){
+    float strength=vUv.y*10.;
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-093516.png" style="zoom:50%;" />
+
+Mod 取余数 , 
+
+如果是 python , 结果有两个数字,第一个为商, 第二个为余数
+
+如 mod (1.1, 1) 商事 1, 余数是 0.1 
+
+
+
+```glsl
+vec4 pat7(){
+  float strength=mod(vUv.y*10., 1.);
+  return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-144425.png" style="zoom:50%;" />
+
+- step 函数: 
+  - `> 0.5` 的取 1 , 
+  - `< 0.5` 的取 0 
+
+```glsl
+vec4 pat8(){
+    float strength=mod(vUv.y*10.,1.);
+    strength=step(0.5, strength);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="/Users/soda/Library/Application Support/typora-user-images/image-20220803224623864.png" alt="image-20220803224623864" style="zoom:50%;" />
+
+只需要将 step 的参数调整即可 : 
+
+```glsl
+vec4 pat9() {
+    float strength=mod(vUv.y*10.,1.);
+    strength=step(0.8, strength);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-144820.png" alt="image-20220803224818658" style="zoom:50%;" />
+
+- clamp : 把一个值限制在一个上限和下限之间，当值超出范围时，使用最大 / 最小值进行代替 ; 
+
+```glsl
+vec4 pat11(){
+    float strengthX=step(.8,mod(vUv.x*10.,1.));
+    float strengthY=step(.8,mod(vUv.y*10.,1.));
+    float strength=clamp(strengthX+strengthY, 0., 1.);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-145046.png" style="zoom:50%;" />
+
+- 加法改乘法
+
+```glsl
+vec4 pat12(){
+    float strengthX=step(.8, mod(vUv.x*10.,1.));
+    float strengthY=step(.8, mod(vUv.y*10.,1.));
+    return vec4(vec3(strengthX*strengthY),1.);
+}
+```
+
+
+
+
+
+----
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-150854.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat21(){
+    float strength=floor(vUv.x*10.)/10.;
+    return vec4(vec3(strength),1.);
+}
+```
 
