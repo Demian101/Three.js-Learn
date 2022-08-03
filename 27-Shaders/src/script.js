@@ -78,22 +78,22 @@ geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
 //     uTexture: {value: flagTexture}
 //   }
 // });
-const material = new THREE.ShaderMaterial(
-{
-  vertexShader: testVertexShader,
-  fragmentShader: testFragmentShader,
-  wireframe: false,
-  side: THREE.DoubleSide,
-  transparent: true,
-  uniforms:
+const material = new THREE.ShaderMaterial({
+  vertexShader: testVertexShader,      // 上面导入的
+  fragmentShader: testFragmentShader,  // 上面导入的
+  wireframe: false,                    // 不显示网格
+  side: THREE.DoubleSide,              // 双面
+  transparent: true,                   // 开启透明
+  uniforms:                            // 传入 uniforms
   {
-    uFrequency: {value: new THREE.Vector2(10, 8)},
-    uTime: {value: 0},
-    uColor: {value: new THREE.Color('orange')},
-    uTexture: {value: flagTexture}
+    uFrequency: {value: new THREE.Vector2(10, 8)},  // 抖动频率, x轴10, y 轴 8
+    uTime: {value: 0},         // 占个位置, 在 animate() 里会补充赋值
+    uColor: {value: new THREE.Color('orange')},  // 传入的材质颜色
+    uTexture: {value: flagTexture}               // 传入的 texture 质地
   }
 });
 
+console.log("geometry.",  geometry.attributes)
 
 
 // Mesh
@@ -155,23 +155,25 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  */
 const clock = new THREE.Clock()
 
-const tick = () => {
+const animate = () => {
   const elapsedTime = clock.getElapsedTime()
 
   // Update controls
   controls.update()
 
   //Update uniform time
+  // uTime.value 会被传入着色器 Shader 用作国旗的前后飘扬控制参数
+  // console.log(elapsedTime) : 1.176, 1.32, 1.36, 1.43 ....
   material.uniforms.uTime.value = elapsedTime;
 
   // Render
   renderer.render(scene, camera)
 
   // Call tick again on the next frame
-  window.requestAnimationFrame(tick)
+  window.requestAnimationFrame(animate)
 }
 
-tick()
+animate()
 
 
 /**

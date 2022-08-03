@@ -7,15 +7,15 @@ uniform float uTime;
 
 // attribute vec3 position;
 // attribute float aRandom;
+
 // attribute vec2 uv;
+// attribute vec2 normal;
 
 // varying float vRandom;
 varying vec2 vUv;
 varying float vElevation;
 
-void main()
-{
-    
+void main() {
 
     vec4 modelPosition = modelMatrix * vec4(position, 1.0);
 
@@ -34,7 +34,7 @@ void main()
     // gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
     gl_Position = projectionPosition;
 
-    //Send varying
+    // Send varying
     // vRandom = aRandom;
     vUv = uv; 
 
