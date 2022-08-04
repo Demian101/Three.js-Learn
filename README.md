@@ -2882,9 +2882,283 @@ vec4 pat12(){
 
 <img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-03-150854.png" style="zoom:50%;" />
 
+- floor : 不超过 x 的最大整数 : 
+  - 如 floor(3.2) == 3 
+
 ```glsl
+// vUv.x:  [0, 0.03, 0.06, 0.09, 0.12, ... , 1]
+/* 
+const li =  [0, 0.03, 0.06, 0.09, 0.12, 0.15, 0.18, 0.91, 0.94, 0.97, 1]
+const lis = li.map((v) => Math.floor(v*10)/10)
+console.log(lis)
+
+[0, 0, 0, 0, 0.1, 0.1, 0.1, 0.9, 0.9, 0.9, 1]
+*/
 vec4 pat21(){
     float strength=floor(vUv.x*10.)/10.;
+    return vec4(vec3(strength),1.);   // [0, 0, 0, 0, 0.1, 0.1, 0.1, ... , 0.9, 0.9, 0.9, 1]
+}
+```
+
+
+
+-----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-014101.png" style="zoom:50%;" />
+
+```glsl
+/*
+ vUv.x: const x = [0,0.03,0.06,0.12,1,  0,0.03,0.06,0.12,1, 0,0.03,0.06,0.12,1, 0,0.03,0.06,0.12,1]
+ vUv.y: const y = [1,1,1,1,1, 0.97,0.97,0.97,0.97,0.97, 0.94,0.94,0.94,0.94,0.94, 0.03,0.03,0.03,0.03,0.03]
+ const lisx = x.map((v) => Math.floor(v*10)/10)
+ const lisy = y.map((v) => Math.floor(v*10)/10)
+ const res = lisx.map(function(v, i) {
+    return v * lisy[i];
+ });
+ console.log("res, ", res)
+
+res: [0, 0, 0, 0.1, 1,
+      0, 0, 0, 0.09000000000000001, 0.9,
+      0, 0, 0, 0.09000000000000001, 0.9,
+      0, 0, 0, 0, 0]
+*/
+
+vec4 pat22(){
+    float strength=floor(vUv.x*10.)/10. * floor(vUv.y*10.)/10.;
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-020815.png)
+
+```glsl
+vec4 pat23(){
+    float strength=random(vUv);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-020940.png)
+
+```glsl
+vec4 pat24(){
+    float strength=random(grid(vUv,10.,10.,0.,0.));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-021224.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat26(){
+    float strength=length(vUv);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+-----
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-021503.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat27(){
+    float strength=distance(vUv,vec2(.5));
+    return vec4(vec3(strength),1.);
+}
+```
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-021625.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat30(){
+    float strength=.15/distance(vec2(vUv.x,(vUv.y-.5)*5.+.5),vec2(.5));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-021659.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat31(){
+    float strength=.15/distance(vec2(vUv.x,(vUv.y-.5)*5.+.5),vec2(.5));
+    strength*=.15/distance(vec2(vUv.y,(vUv.x-.5)*5.+.5),vec2(.5));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-021858.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat33(){
+    float strength=step(.5,distance(vUv,vec2(.5))+.25);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-021945.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat37(){
+    vec2 wavedUv=vec2(vUv.x,vUv.y+sin(vUv.x*30.)*.1);
+    float strength=invert(step(.01,abs(distance(wavedUv,vec2(.5))-.25)));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022058.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat38(){
+    vec2 wavedUv=vec2(vUv.x+sin(vUv.y*30.)*.1,vUv.y+sin(vUv.x*30.)*.1);
+    float strength=invert(step(.01,abs(distance(wavedUv,vec2(.5))-.25)));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022148.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat39(){
+    vec2 wavedUv=vec2(vUv.x+sin(vUv.y*100.)*.1,vUv.y+sin(vUv.x*100.)*.1);
+    float radius=.25;
+    float strength=invert(step(.01,abs(distance(wavedUv,vec2(.5))-radius)));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022305.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat40(){
+    float strength=angle(vUv);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022401.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat43(){
+    float angle=angleOffset(vUv,.5)/(PI*2.)+.5;
+    float strength=mod(angle*20.,1.);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+-----
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022441.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat45(){
+    float angle=angleOffset(vUv,.5)/(PI*2.)+.5;
+    float radius=.25+sin(angle*100.)*.02;
+    float strength=invert(step(.01,abs(distance(vUv,vec2(.5))-radius)));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022522.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat46(){
+    float strength=cnoise(vUv*10.);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022601.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat47(){
+    float strength=step(0.,cnoise(vUv*10.));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022644.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat48(){
+    float strength=invert(abs(cnoise(vUv*10.)));
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022722.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat49(){
+    float strength=sin(cnoise(vUv*10.)*20.);
+    return vec4(vec3(strength),1.);
+}
+```
+
+
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-022826.png" style="zoom:50%;" />
+
+```glsl
+vec4 pat50(){
+    float strength=step(.9,sin(cnoise(vUv*10.)*20.));
     return vec4(vec3(strength),1.);
 }
 ```

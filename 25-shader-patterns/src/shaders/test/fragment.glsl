@@ -190,7 +190,7 @@ vec4 pat21(){
 }
 
 vec4 pat22(){
-    float strength=floor(vUv.x*10.)/10.*floor(vUv.y*10.)/10.;
+    float strength=floor(vUv.x*10.)/10. * floor(vUv.y*10.)/10.;
     return vec4(vec3(strength),1.);
 }
 
@@ -341,11 +341,14 @@ vec4 pat49(){
 }
 
 vec4 pat50(){
-    float strength=step(.9,sin(cnoise(vUv*10.)*20.));
+    float strength=step(.5,sin(cnoise(vUv*10.)*20.));
     return vec4(vec3(strength),1.);
 }
 
 void main(){
+    /*
+       通过取消注释来对每个 Pattern 进行预览 ；
+    */
     // gl_FragColor = vec4(1, 0, 1   ,1.);
     // gl_FragColor = vec4(vUv.x, vUv.x, 1, 1.);
     // gl_FragColor=pat1();
@@ -368,7 +371,7 @@ void main(){
     // gl_FragColor=pat18();
     // gl_FragColor=pat19();
     // gl_FragColor=pat20();
-    gl_FragColor=pat21();
+    // gl_FragColor=pat21();
     // gl_FragColor=pat22();
     // gl_FragColor=pat23();
     // gl_FragColor=pat24();

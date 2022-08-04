@@ -5,6 +5,17 @@ import * as dat from 'dat.gui'
 import testVertexShader from './shaders/test/vertex.glsl'
 import testFragmentShader from './shaders/test/fragment.glsl'
 
+// const li =  [0, 0.03, 0.06, 0.09, 0.12, 0.15, 0.18, 0.91, 0.94, 0.97, 1]
+const x = [0,0.03,0.06,0.12,1,  0,0.03,0.06,0.12,1, 0,0.03,0.06,0.12,1, 0,0.03,0.06,0.12,1]
+const y = [1,1,1,1,1, 0.97,0.97,0.97,0.97,0.97, 0.94,0.94,0.94,0.94,0.94, 0.03,0.03,0.03,0.03,0.03]
+const lisx = x.map((v) => Math.floor(v*10)/10)
+const lisy = y.map((v) => Math.floor(v*10)/10)
+const res = lisx.map(function(v, i) {
+    return v * lisy[i];
+});
+console.log("res, ", res)
+
+
 /**
  * Base
  */
