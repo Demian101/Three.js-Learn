@@ -3320,8 +3320,6 @@ const tick = () => {
 
 
 
-
-
 ```glsl
 vec4 permute(vec4 x) {  return mod(((x*34.)+1.)*x,289.);  }
 vec4 taylorInvSqrt(vec4 r) {  return 1.79284291400159-.85373472095314*r;  }
@@ -3329,7 +3327,22 @@ vec3 fade(vec3 t) {  return t*t*t*(t*(t*6.-15.)+10.);  }
 
 float cnoise(vec3 P) {  .......  }
 
-
+void main() {
+    vec4 modelPosition = modelMatrix * vec4(position,1.);
+    float elevation = sin(modelPosition.x * uBigWavesFrequency.x + uTime*uBigWavesSpeed)
+                       * sin(modelPosition.z*uBigWavesFrequency.y+uTime*uBigWavesSpeed)
+                       * uBigWavesElevation;
+    for(float i=1.0; i <= uSmallIterations; i++){
+        elevation -= abs(cnoise(vec3(
+            modelPosition.xz * uSmallWavesFrequency * i, uTime * uSmallWavesSpeed)
+        ) * uSmallWavesElevation/i);
+    }
+    modelPosition.y += elevation;
+    vec4 viewPosition = viewMatrix*modelPosition;
+    vec4 projectedPosition = projectionMatrix*viewPosition;
+    gl_Position=projectedPosition;
+    vElevation=elevation;
+}
 ```
 
 
