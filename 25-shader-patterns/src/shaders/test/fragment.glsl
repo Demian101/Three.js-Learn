@@ -215,7 +215,7 @@ vec4 pat26(){
 }
 
 vec4 pat27(){
-    float strength=distance(vUv,vec2(.5));
+    float strength=distance(vUv,vec2(0.5, 0.5));
     return vec4(vec3(strength),1.);
 }
 
@@ -382,7 +382,7 @@ void main(){
     // gl_FragColor=pat29();
     // gl_FragColor=pat30();
     // gl_FragColor=pat31();
-    // gl_FragColor=pat32();
+    gl_FragColor=pat32();
     // gl_FragColor=pat33();
     // gl_FragColor=pat34();
     // gl_FragColor=pat35();
