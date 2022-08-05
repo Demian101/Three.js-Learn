@@ -91,7 +91,7 @@ const MODIFIRED_DEPTH_BEGIN_VERTEX_CHUNK = `
   ${BEGIN_VERTEX_CHUNK}
   ${distortDepthBeginVertexShader}`;
 const material = new THREE.MeshStandardMaterial({
-  map: mapTexture,
+  map: mapTexture,  
   normalMap: normalTexture,
 });
 const matHook = (shader) => {

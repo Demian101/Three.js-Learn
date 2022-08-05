@@ -3393,8 +3393,6 @@ small Parameter 的意义在于，给大波加一些小波，类似下图的绿�
 
 https://thebookofshaders.com/08/
 
-
-
 到目前为止，我们一直在创建全新的 shader materials 着色器材质。
 
 **但是 , 如果我们想修改 Three.js 内置材质呢？** 也许我们对 `MeshStandardMaterial`  的结果很满意，但我们想给它添加顶点动画。
@@ -3459,8 +3457,6 @@ vec3 transformed = vec3( position );
 
 
 
-`
-
 `begin_vertex.glsl.js` is handling the position first by creating a variable named `transformed` 
 
 Try to replace `#include <begin_ vertex>` 
@@ -3470,3 +3466,122 @@ material.onBeforeCompile = function(shader) {
   shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '')
 }
 ```
+
+
+
+
+
+
+
+# Post-Processing
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-05-131954.png)
+
+后处理是关于在最终图像（渲染)上添加效果。人们大多在电影制作中使用这种技术，但我们也可以在 WebGL 中做到这一点。
+
+后处理可以很微妙地改善图像或创造巨大的效果。 以下是您可以使用后处理的一些示例：
+
+- Depth of field  景深
+- Bloom  盛开
+- God ray  神光
+- Motion blur  运动模糊
+- Glitch effect  毛刺效应
+- Outlines  大纲
+- Color variations  颜色变化
+- Antialiasing  抗锯齿 
+- Reflections and refractions  反射和折射
+- Etc.
+
+
+
+我们将使用与真实模型渲染课程相同的设置，使用 Leonardo Carrion 的 [**Damaged Helmet**](https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/2.0/DamagedHelmet) 模型。这是一个流行的模型，具有许多细节和良好的纹理，与我们的 post-processing 相得益彰。
+
+
+
+## Render target
+
+我们不是在画布 canvas 中渲染，而是在我们所谓的  `render target` 渲染目标中进行渲染。render target 将为我们提供与通常纹理非常相似的纹理。以更简单的方式，我们在屏幕上渲染纹理而不是 canvas 画布。 
+
+The 术语 Term  `render target`  只是 Three.js 特定称呼。其他上下文大多使用 “buffer” 。
+
+然后将此纹理应用于面向相机并覆盖整个视图的平面。该平面使用具有特殊 Fragment Shader 的材质，可以进行后处理效果。如果后处理效果包括使图像变红，它只会乘以该 fragment shader 中像素的红色值。
+
+大多数后期处理效果不仅仅是调整颜色值，但你明白了。
+
+在 Three.js 中，这些“效果”被称为“ passes”。从现在开始，我们将使用该术语 term。
+
+
+
+## Ping-pong buffering
+
+我们可以在后期处理中进行多次处理：一次进行运动模糊，一次进行颜色更改，一次进行景深处理，等等。
+
+因为我们可以进行多次处理，所以后期处理需要两个 render targets 。原因是我们无法在 drawing 绘制的同时获取渲染目标的纹理 Texture 。Solution是 : 
+
+- 在第一个渲染目标中绘制，同时从第二个渲染目标中获取纹理。
+- 在下一轮，切换那些渲染目标，从第二个获取纹理，并在第一个上绘制。
+- 再下一次 "passes" 时，再次切换，一次又一次。这就是我们所说的乒乓缓冲。
+
+
+
+### Final "pass" on the canvas
+
+最后的 pass  不会放在 render target  中，因为我们可以将它直接放在画布上，这样用户就可以看到最终结果。
+
+
+
+我们所要做的就是使用 EffectComposer 类来为我们处理大部分繁重的工作。
+
+
+
+
+
+
+
+## GlitchPass
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-05-12.gif)
+
+> 增加一个类似黑客入侵的闪动效果
+
+```js
+import { GlitchPass } from "three/examples/jsm/postprocessing/GlitchPass.js";
+
+const glitchPass = new GlitchPass();
+composer.addPass(glitchPass);
+//glitchPass.goWild = true;
+//glitchPass.enabled = false;
+```
+
+
+
+## RGB Shift Shader 
+
+> 这个比较特殊, 只能当做着色器来使用 ;
+>
+> 色调移位 Shift , 看起来就像摄像机发生了 Error , 哈哈
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-05-141313.png" style="zoom:30%;" />
+
+```js
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { RGBShiftShader } from "three/examples/jsm/shaders/RGBShiftShader.js";
+
+// 设置 sRGBEncoding, 否则场景会很暗 ;
+const renderTarget = new THREE.WebGLRenderTarget(800, 600, {
+  minFilter: THREE.LinearFilter,
+  magFilter: THREE.LinearFilter,
+  format: THREE.RGBAFormat,
+  encoding: THREE.sRGBEncoding,
+});
+
+const composer = new EffectComposer(renderer, renderTarget);
+
+const rgbShiftPass = new ShaderPass(RGBShiftShader);
+composer.addPass(rgbShiftPass);
+rgbShiftPass.enabled = false;
+
+```
+
+
+
