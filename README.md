@@ -3350,3 +3350,123 @@ void main() {
 small Parameter 的意义在于，给大波加一些小波，类似下图的绿色线  :
 
 <img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-04-IMG_0786.jpg" style="zoom:40%;" />
+
+
+
+
+
+
+
+# Animate Galaxxy 星系动画
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-05-1.gif)
+
+粒子自旋 : 中心自旋较快, 外围自旋较慢 ;
+
+粒子尺寸衰减 : 
+
+- 默认情况下, 拉远镜头时粒子的大小尺寸不变 ; 
+- 但是我们想营造一种近大远小的效果: 
+  - Solution : We are going to take the code from the Three.js depedency in
+    `/node_modules/three/src/renderers/shaders/ShaderLib/point_vert.glsl.js` 
+
+```js
+    gl_PointSize *= (1.0 / -viewPosition.z);  // three/src/renderers/shaders/ShaderLib/point_vert.glsl.js
+```
+
+
+
+`gl_FragCoord` : 
+
+- 内置变量 `gl_FragCoord` 表示 WebGL 在 canvas 画布上渲染的所有片元或者说像素的坐标，坐标原点是 canvas 画布的左上角，x 轴水平向右，y 竖直向下，gl_FragCoord 坐标的单位是像素，值是 `vec2(x,y)` , 通过 `gl_FragCoord.x`、`gl_FragCoord.y` 方式可以分别访问片元坐标的纵横坐标。
+- <img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-05-IMG_0787.jpg" style="zoom:30%;" />
+
+`atan` : arctan 反正切函数
+
+
+
+
+
+
+
+# Modified materials
+
+https://thebookofshaders.com/08/
+
+
+
+到目前为止，我们一直在创建全新的 shader materials 着色器材质。
+
+**但是 , 如果我们想修改 Three.js 内置材质呢？** 也许我们对 `MeshStandardMaterial`  的结果很满意，但我们想给它添加顶点动画。
+
+如果我们要重写整个 MeshStandardMaterial，处理灯光、环境贴图、基于物理的渲染、所有类型的纹理等将花费太多时间。
+
+相反，我们将从 MeshStandardMaterial 开始，并尝试将我们的代码集成到它的 shaders 着色器中。
+
+
+
+有两种方法：
+
+1. 通过使用在编译着色器之前触发的 Three.js hook，让我们可以向 shader 中注入我们的代码。
+
+2. 通过将 Material 重新创建为全新的 Material，但遵循 Three.js 代码中所做的操作，然后使用相同的参数以及我们要添加的参数
+
+然第二个选项完全可以接受，但我们需要在 Three.js 源代码中花费大量时间来了解如何正确设置所有内容。
+
+相反，我们将使用第一种技术。我们仍然会花一些时间在 Three.js 代码上，但是会容易得多。
+
+在本课中，我们将使模型顶点以一种有趣的方式扭曲，但材质的所有基本特征仍然有效，如阴影、纹理、法线贴图等。
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-05-2.gif)
+
+>  著名的 Lee Perry-Smith 头部模型
+
+
+
+
+
+对于 `MeshStandardMaterial` , 但我们想修改它的 Shader 着色器。
+
+首先需要访问其原始着色器 , 为此，我们可以在材质上使用 `onBeforeCompile` 属性。 
+
+如果我们为它分配一个函数，这个函数将在编译之前以着色器选项作为第一个参数被调用：
+
+( 这给了我们机会修改 build-in 的 Shader, 修改完后 , 系统再编译 Shader 进行着色 ) 
+
+- 如下, 可以访问 `vertexShader、fragmentShader 和 uniforms ` ，我们可以修改它们并查看结果。
+
+```js
+material.onBeforeCompile = (shader) => {
+    console.log(shader)
+}
+console.log 内容 :
+> uniforms: {diffuse: {…}, opacity: {…}, map: {…}, uvTransform: {…}, uv2Trans
+> vertexShader: "\n  #include <common>\n  uniform float uTime;\n\nmat2 
+> fragmentShader: "#if DEPTH_PACKING == 3200\n\tuniform float opacity;\n#
+```
+
+
+
+
+
+`cat ./node_modules/three/src/renderers/shaders/ShaderChunk/begin_vertex.glsl.js`  : 
+
+```js
+export default /* glsl */`
+vec3 transformed = vec3( position );
+`;
+```
+
+
+
+`
+
+`begin_vertex.glsl.js` is handling the position first by creating a variable named `transformed` 
+
+Try to replace `#include <begin_ vertex>` 
+
+```js
+material.onBeforeCompile = function(shader) {
+  shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '')
+}
+```

@@ -93,7 +93,7 @@ void main() {
     }
     modelPosition.y += elevation;
     vec4 viewPosition = viewMatrix*modelPosition;
-    vec4 projectedPosition=projectionMatrix*viewPosition;
+    vec4 projectedPosition = projectionMatrix*viewPosition;
     gl_Position=projectedPosition;
     vElevation=elevation;
 }

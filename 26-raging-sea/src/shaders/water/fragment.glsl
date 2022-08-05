@@ -5,8 +5,7 @@ uniform float uColorMultiplier;
 
 varying float vElevation;
 
-void main()
-{
+void main() {
     float mixStrength=(vElevation+uColorOffset)*uColorMultiplier;
     vec3 color=mix(uDepthColor,uSurfaceColor,mixStrength);
     // vec3 color = mix(uDepthColor, uSurfaceColor, vElevation);
