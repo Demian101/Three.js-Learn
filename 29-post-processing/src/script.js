@@ -163,11 +163,13 @@ const dotScreenPass = new DotScreenPass();
 composer.addPass(dotScreenPass);
 dotScreenPass.enabled = false;
 
+// glitch Pass
 const glitchPass = new GlitchPass();
 composer.addPass(glitchPass);
 glitchPass.goWild = true;
 glitchPass.enabled = false;
 
+// rgbShift Pass
 const rgbShiftPass = new ShaderPass(RGBShiftShader);
 composer.addPass(rgbShiftPass);
 rgbShiftPass.enabled = false;
@@ -175,6 +177,8 @@ rgbShiftPass.enabled = false;
 const smaaPass = new SMAAPass();
 composer.addPass(smaaPass);
 
+
+// unrealBloom Pass
 const unrealBloomPass = new UnrealBloomPass();
 composer.addPass(unrealBloomPass);
 // unrealBloomPass.enabled = false;
@@ -188,6 +192,7 @@ gui.add(unrealBloomPass, "strength").min(0).max(2).step(0.001);
 gui.add(unrealBloomPass, "radius").min(0).max(2).step(0.001);
 gui.add(unrealBloomPass, "threshold").min(0).max(1).step(0.001);
 
+// Tint pass
 const TintShader = {
   uniforms: {
     tDiffuse: {
@@ -203,7 +208,7 @@ const TintShader = {
 
 const tintPass = new ShaderPass(TintShader);
 composer.addPass(tintPass);
-tintPass.enabled = false;
+// tintPass.enabled = false;
 
 gui
   .add(tintPass.material.uniforms.uTint.value, "x")
@@ -224,17 +229,12 @@ gui
   .step(0.001)
   .name("blue");
 
+// Displacement
 const DisplacementShader = {
   uniforms: {
-    tDiffuse: {
-      value: null,
-    },
-    uTime: {
-      value: 0,
-    },
-    uNormalMap: {
-      value: null,
-    },
+    tDiffuse: { value: null, },
+    uTime: {  value: 0,  },
+    uNormalMap: { value: null,},
   },
   vertexShader: displacementVertexShader,
   fragmentShader: displacementFragmentShader,
@@ -242,6 +242,7 @@ const DisplacementShader = {
 
 const displacementPass = new ShaderPass(DisplacementShader);
 composer.addPass(displacementPass);
+// displacementPass.enabled = false;
 
 displacementPass.material.uniforms.uNormalMap.value = textureLoader.load(
   "/textures/interfaceNormalMap.png"

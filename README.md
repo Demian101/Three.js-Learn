@@ -3580,8 +3580,536 @@ const composer = new EffectComposer(renderer, renderTarget);
 const rgbShiftPass = new ShaderPass(RGBShiftShader);
 composer.addPass(rgbShiftPass);
 rgbShiftPass.enabled = false;
-
 ```
 
 
 
+
+
+
+
+## unrealBloomPass
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-06-010003.png" alt="image-20220806085959624" style="zoom:30%;" />
+
+> 不真实爆炸💥 
+>
+> React 版本 : https://codesandbox.io/s/github/onion2k/r3f-by-example/tree/develop/examples/effects/emissive-bloom?file=/src/index.js:412-427
+
+```js
+const unrealBloomPass = new UnrealBloomPass();
+composer.addPass(unrealBloomPass);
+unrealBloomPass.enabled = false;
+
+unrealBloomPass.strength = 0.3;
+unrealBloomPass.radius = 1;
+unrealBloomPass.threshold = 0.6;
+
+gui.add(unrealBloomPass, "enabled");
+gui.add(unrealBloomPass, "strength").min(0).max(2).step(0.001);
+gui.add(unrealBloomPass, "radius").min(0).max(2).step(0.001);
+gui.add(unrealBloomPass, "threshold").min(0).max(1).step(0.001);
+```
+
+
+
+## Tint(色调) Shader
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-06-011400.png" style="zoom:50%;" />
+
+```js
+const TintShader = {
+  uniforms: {
+    tDiffuse: {
+      value: null,
+    },
+    uTint: {
+      value: new THREE.Vector3(),
+    },
+  },
+  vertexShader: tintVertexShader,  // 看下面
+  fragmentShader: tintFragmentShader, // 看下面
+};
+
+const tintPass = new ShaderPass(TintShader);
+composer.addPass(tintPass);
+tintPass.enabled = false;
+
+gui.add(tintPass.material.uniforms.uTint.value, "x").min(-1).max(1).step(0.001)
+  .name("red");
+gui.add(tintPass.material.uniforms.uTint.value, "y").min(-1).max(1).step(0.001)
+  .name("green");
+gui.add(tintPass.material.uniforms.uTint.value, "z").min(-1).max(1).step(0.001)
+  .name("blue");
+```
+
+
+
+```glsl
+/* vertex.glsl */
+varying vec2 vUv;
+void main(){
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.);
+    vUv=uv;
+}
+
+/* fragment.glsl */
+uniform sampler2D tDiffuse;
+uniform vec3 uTint;
+varying vec2 vUv;
+
+void main(){
+    vec4 color=texture2D(tDiffuse,vUv);
+    color.rgb+=uTint;
+    gl_FragColor=color;
+}
+```
+
+
+
+
+
+
+
+## displacement
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-06-2.gif)
+
+> 开始出现扭曲效果 ; 
+
+```js
+import displacementVertexShader from "./shaders/displacement/vertex.glsl";
+import displacementFragmentShader from "./shaders/displacement/fragment.glsl";
+
+// Displacement
+const DisplacementShader = {
+  uniforms: {
+    tDiffuse: { value: null, },
+    uTime: {  value: 0,  },
+    uNormalMap: { value: null,},
+  },
+  vertexShader: displacementVertexShader,
+  fragmentShader: displacementFragmentShader,
+};
+
+const displacementPass = new ShaderPass(DisplacementShader);
+composer.addPass(displacementPass);
+
+displacementPass.material.uniforms.uNormalMap.value = textureLoader.load(
+  "/textures/interfaceNormalMap.png"
+);
+```
+
+
+
+```glsl
+/* fragment.glsl */
+uniform sampler2D tDiffuse;
+uniform float uTime;
+uniform sampler2D uNormalMap;
+
+varying vec2 vUv;
+
+void main(){
+    vec3 normalColor=texture2D(uNormalMap,vUv).xyz*2.-1.;
+    vec2 newUv=vUv+normalColor.xy*.1;
+    vec4 color=texture2D(tDiffuse,newUv);
+    
+    vec3 lightDirection=normalize(vec3(-1.,1.,0.));
+    float lightness=clamp(dot(normalColor,lightDirection),0.,1.);
+    color.rgb+=lightness*2.;
+    
+    gl_FragColor=color;
+}
+
+/* vertex.glsl */
+varying vec2 vUv;
+
+void main(){
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);
+    vUv=uv;
+}
+```
+
+
+
+加一个金属面罩的视角感 : 
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-06-021430.png" alt="image-20220806101428236" style="zoom:50%;" />
+
+```js
+displacementPass.material.uniforms.uNormalMap.value = textureLoader.load(
+  "/textures/interfaceNormalMap.png"
+);
+```
+
+
+
+
+
+
+
+# Performance Tips
+
+![](http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-06-024538.png)
+
+正如我们在第一节课中所说，您至少应该以 60fps 的体验为目标。一些用户甚至可能具有应该以更高帧速率运行体验的配置。这些通常是游戏玩家，在性能和帧速率方面更加苛刻。
+
+可能有两个主要限制：
+
+- 中央处理器 CPU
+- 图形处理器 GPU
+
+您需要密切关注性能并在具有不同设置的多个设备上进行测试，如果您的网站应该与移动设备兼容，请不要忘记移动设备。
+
+如果您还关注网站的整体权重，这将有所帮助。当我们在本地开发时，加载速度非常快，但是一旦上线，这取决于用户连接和服务器速度。我们需要保持资产尽可能轻。
+
+有很多技巧可以提高性能和重量，我们已经看到了其中的大部分
+
+
+
+## Monitor FPS
+
+Chrome 曾经有一个不错的 FPS meter ( FPS 仪表)，但现在没有了。相反，我们可以使用像 stats.js 这样的 JavaScript FPS meter。
+
+使用 `npm install --save stats.js`  将其添加到依赖项中。
+
+导入并实例化
+
+```js
+import Stats from 'stats.js'
+
+const stats = new Stats()
+stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom)
+```
+
+
+
+Call it's  `begin()` and `end()` methods in the `tick` function
+
+```js
+const tick = () => {
+    stats.begin()
+
+    // ...
+
+    stats.end()
+}
+```
+
+**JavaScript**
+
+Copy
+
+You should get a nice looking FPS meter.
+
+
+
+## Disable FPS limit
+
+无论屏幕功能如何，都有一种解锁 Chrome 帧速率的方法。
+
+即使在良好的计算机上，这也将启用帧速率监控。例如，如果您在一台好计算机上进行开发，并且看到 60fps，您可能会认为这没问题。但也许你的网站在那台好电脑上只能以70~80fps的速度运行，但在其他电脑上帧率会降到 60fps 以下，你不会知道的。
+
+如果你解锁帧率限制，你会发现性能不够好，为了安全起见，你应该在这台电脑上以 150~200fps 的速度运行。
+
+要解锁 Chrome framerate：
+
+- 完全关闭它——如果您在 Chrome 上查看本课程，请在其他地方写下以下说明。
+- 打开终端。
+- 打开以下 Github gist 并启动正确的命令——Mac 或 Windows：https://gist.github.com/brunosimon/c15e7451a802fa8e34c0678620022f7d
+
+Chrome 应该在没有帧速率限制的情况下打开。您可以通过再次打开 FPS **meter** 来测试它。如果它不起作用，请关闭它并重试。如果它仍然不起作用，你将不得不没有它。
+
+当心;这样做会从您的计算机中汲取更多电量，并可能导致 Chrome 崩溃。
+
+
+
+## 监控绘图调用
+
+绘制调用是 GPU 绘制三角形的动作。当我们有一个包含许多对象、几何图形、材质等的复杂场景时，将会有很多绘制调用。
+
+通常，我们可以说绘制调用越少越好。我们将看到一些减少这些问题的技巧，但首先，我们想监控它们。
+
+有一个很棒的 Chrome 扩展名为 Spector.js 可以帮助你。
+
+安装扩展：https://chrome.google.com/webstore/detail/spectorjs/denbgaamihkadbghdceggmchnflmhpmk
+
+在 WebGL 页面上，单击扩展图标将其激活。
+
+再次单击以打开扩展面板。
+
+单击红色圆圈以记录帧。
+
+
+
+## Renderer informations
+
+The `renderer` can provide some information about what's in the scene and what's being drawn.
+
+Just log the `renderer.info` to get this information:
+
+
+
+# loading progress 加载进度
+
+> https://threejs-journey.com/lessons/34#animate
+
+到目前为止，我们所拥有的只是页面上的 WebGL 画布，一旦准备好就会显示出来。
+
+在本课中，我们将学习如何添加一个非常简单的加载器 Loader ，该加载器由一个在加载资产时填充的条组成。整个场景将是黑色的，并且只有在所有内容都加载了后 , 漂亮的淡入淡出后才会显示。
+
+对于加载器，我们将使用 HTML 和 CSS。这是了解如何将 HTML 与 WebGL 结合起来的绝佳机会。
+
+
+
+```js
+/**
+ * Loaders
+ */
+const loadingBarEl = document.querySelector(".loading-bar");
+const loadingManager = new THREE.LoadingManager(
+  async () => {
+    await ky.sleep(500);
+    gsap.to(overlay.material.uniforms.uAlpha, {
+      value: 0,
+      duration: 3,
+      delay: 1,
+    });
+    loadingBarEl.classList.add("ended");
+    loadingBarEl.style.transform = "";
+  },
+  (url, loaded, total) => {
+    const progress = loaded / total;
+    loadingBarEl.style.transform = `scaleX(${progress})`;
+  }
+);
+const gltfLoader = new GLTFLoader(loadingManager);
+const cubeTextureLoader = new THREE.CubeTextureLoader(loadingManager);
+```
+
+
+
+
+
+
+
+# Mixing HTML and WebGL
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-06-043254.png" style="zoom:50%;" />
+
+在 `webgl` 和 `loading-bar` 后面添加 `class-point` ( 3 个点, 用来给 3D Model 添加文字说明 )
+
+```html
+<canvas class="webgl"></canvas>
+
+<div class="loading-bar"></div>
+
+<div class="point point-0">
+    <div class="label">1</div>
+    <div class="text">Lorem ipsum, dolor sit amet consectetur adipisicing elit</div>
+</div>	
+```
+
+> text 不应在页面上可见，因为它隐藏在 ` <canvas>` 后面。
+
+
+
+## Points 处理
+
+每个点对象都有两个属性：
+
+Each point object will have two properties:  3D position 和对 HTML 元素的引用 ( the 3D position and a reference to the HTML element)
+
+```js
+// 3 个 hover 上去， 可以显示详细信息的 Points
+// document.querySelector(...) to retrieve the element from the HTML.
+const points = [
+  {
+    position: new THREE.Vector3(1.55, 0.3, -0.6),
+    element: document.querySelector(".point-0"),
+  },
+  {
+    position: new THREE.Vector3(0.5, 0.8, -1.6),
+    element: document.querySelector(".point-1"),
+  },
+  {
+    position: new THREE.Vector3(1.6, -1.3, -0.7),
+    element: document.querySelector(".point-2"),
+  },
+];
+
+// 使用 for 循环, 更新 Points 位置:
+const tick = () => {
+    // Update controls
+    controls.update()
+
+    // Go through each point
+    for(const point of points) {
+
+    }
+}
+```
+
+
+
+为了得到 Point 的位置, 我们需要得到该点**我们需要得到该点的 3D 场景位置的 2D 屏幕位置。(the 2D screen position of the 3D scene position)**。
+
+因为要对位置进行修改, 所以先 clone 一份 Point 现在的位置 : 
+
+```js
+const screenPosition = point.position.clone()
+```
+
+要获取 2D 屏幕位置，我们需要调用 `project(...) ` 方法并使用相机作为参数：
+
+```js
+  for(const point of points) {        
+    const screenPosition = point.position.clone()
+    screenPosition.project(camera)
+    console.log(screenPosition.x)
+```
+
+要从投影的屏幕位置到屏幕上的像素(To go from that projected screen position to the pixels on the screen)，我们需要乘以渲染大小的一半，并且我们已经在 sizes 对象中有这个值
+
+> 没看懂
+
+```js
+        const translateX = screenPosition.x * sizes.width * 0.5
+```
+
+
+
+
+
+```js
+    for(const point of points) {
+        const screenPosition = point.position.clone()
+        screenPosition.project(camera)
+
+        const translateX = screenPosition.x * sizes.width * 0.5
+        const translateY = - screenPosition.y * sizes.height * 0.5
+        point.element.style.transform = `translateX(${translateX}px) translateY(${translateY}px)`
+    }
+```
+
+> 在 CSS 中，正 translateY 下降，而在 Three.js 中，正 y 上升。
+
+
+
+## Raycaster
+
+为了测试 Point 点前面是否有东西，我们将使用 `Raycaster` 。
+
+我们将从相机射出一条射线到点。如果没有相交的对象，我们显示点 Point 。如果有东西，我们测试交叉点的距离: 
+
+- 如果交点比点远，说明物体在点的后面，我们可以显示出来。
+- 如果相交点比该点近，则相交对象在该点的前面，我们将其 ( 点) 隐藏。
+  - 这样一来 , 我们转动头盔时, 如果用户转到了头盔的背部 , 就隐藏正面的点 Point , 这很合理 ; 
+
+
+
+```js
+const raycaster = new THREE.Raycaster();
+
+const tick = () => {
+  controls.update();
+
+  if (sceneReady) { 
+    for (const point of points) {
+      const screenPos = point.position.clone(); 
+      screenPos.project(camera);
+      raycaster.setFromCamera(screenPos, camera);
+```
+
+
+
+检测是否有 intersection ( 交叉点) , 有交叉点说明 Point 前面有东西挡着 : 
+
+```js
+    for (const point of points) {
+      
+      raycaster.setFromCamera(screenPos, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      if (intersects.length === 0) {
+        point.element.classList.add("active");
+      } else {
+        const intersectionDistance = intersects[0].distance; // (第 1 个) 交点距离
+        const pointDistance = point.position.distanceTo(camera.position);  // 点到摄像机的距离
+        if (intersectionDistance < pointDistance) {
+          point.element.classList.remove("active");
+        } else {
+          point.element.classList.add("active");
+        }
+      }
+```
+
+
+
+> intersectObjects(...) 方法返回一个交集数组。这些交叉点按距离排序，最近的在前。这意味着如果有多个交叉点，我们不必测试所有交叉点，我们可以只测试第一个。
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-07-IMG_0789.jpg" style="zoom:50%;" />
+
+如上图,  只有 Point distance > intersection 的距离时, 说明 Point 应该被遮盖 : 此时移除 `active` 属性 ; 
+
+否则, 说明应该显示 Point ,添加 Active css 属性
+
+
+
+
+
+
+
+# Blender - Baking
+
+当您在 Blender 等 3D 软件中进行渲染时，它通常看起来比您导入到 Three.js 中的模型更好，无论您多么努力地尝试获得完全相同的照明和颜色。这是因为制作渲染时使用的技术。
+
+Ray Tracing  (光线追踪) 包括向渲染的每个像素投射多条光线。这些光线从我们正在渲染的几何图形开始。接下来，他们测试场景中每个光线的方向，以查看几何体的哪一部分被照亮，并测试从几何体反射回来的光线的方向是否与场景中的其他物体发生碰撞。
+
+然后，对于这些碰撞中的每一个，当它们从其他物体反弹时，会投射更多的光线。它会像这样持续多次。然后计算这些碰撞收集的所有信息以定义该像素的最终颜色
+
+Ray Tracing  (光线追踪) 的目标是模拟现实生活中的照明并启用间接照明和柔和阴影等视觉效果。例如，如果将红色物体靠近白色物体放置，您会看到白色物体被染成红色，因为光线从红色表面反射到白色表面。同样，当表面靠近白色物体时，您会看到红色物体看起来更亮。
+
+这个过程会产生美丽逼真的渲染，但进行一次渲染可能需要几分钟甚至几小时。
+
+
+
+当我们使用 WebGL 进行渲染时，我们需要尽可能快地进行渲染以获得**良好的帧速率**。我们没有那么奢侈的时间花几十分钟在一帧的渲染上。所以 WebGL 中的渲染使用了更便宜的技术，这些技术看起来不太完美，但至少保持了不错的帧速率。
+
+baking (烘焙?) 的想法是我们**将这些光线追踪渲染保存到纹理中**，然后在 WebGL 中使用，而不是使用 Three.js 提供的经典渲染技术。
+
+这是烘焙纹理的示例：
+
+<img src="http://imagesoda.oss-cn-beijing.aliyuncs.com/Sodaoo/2022-08-07-140134.png" style="zoom:50%;" />
+
+> 可以看出光线都被做好了 ;
+
+
+
+这就是 Three.js 中的结果：
+
+- 没有光，没有实时阴影。只是上面的示例中看到的纹理 , 被放置在几何图形上。
+- 我们将直接在 Meshes 上看到 Ray Tracing 渲染，看起来很棒。当我们在场景中移动时，性能会很棒，因为我们所做的只是在几何体上显示纹理。
+
+不幸的是，有一些缺点：
+
+- 我们必须在 3D 软件中 Baking (烘焙) 所有内容，这是一个漫长的过程。
+- 我们必须加载纹理，如果您有一个包含大量对象的复杂场景，您将需要大量纹理。这不利于加载，但也可能导致体验开始时短暂冻结，因为我们需要将这些纹理加载到 GPU 中。
+- 灯光不是动态的。我们不能移动灯光，也不能实时改变它们的强度或颜色。我们必须在 3D 软件中完成并重新烘焙所有内容。
+- 选择是否使用烘焙取决于您和项目。请记住，您仍然可以混合烘焙和非烘焙材料，但很难保持均匀的结果。
+
+
+
+
+
+To create that baked scene, we need to go through multiple steps:
+
+- 在 3D 软件中创建 scene .
+- 优化所有对象，因为我们需要干净的几何形状并且只需要我们可以看到的表面。
+- UV unwrap everything.
+- Bake the render into **texture**(s). 
+- 导出场景和纹理。 如果我们这样做，我们将只有一个大纹理。但是，如果有很多对象并且我们想要更好的质量，我们可以有多个纹理。
+- Import everything in Three.js and apply the texture on the mesh.
+
+As a bonus, we will also add some details in Three.js to give more life to the scene like a cool portal effect with fireflies floating around.
