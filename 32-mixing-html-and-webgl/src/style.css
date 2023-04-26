@@ -53,14 +53,15 @@ body {
   transform: translate(var(--tx), var(--ty));
 }
 
+/* 将过渡添加到文本中，但不仅仅是在悬停时。这样，当光标离开该点时也会发生过渡 */
 .point .text {
   opacity: 0;
   transition: 0.3s;
 }
 
 .point .label {
-  cursor: help;
-  transform: scale(0);
+  cursor: help;  /* 将普通的光标变成小 “？”， 提升交互感 */
+  transform: scale(0);   /* 缩放动画 */
   transition: 0.3s;
 }
 
